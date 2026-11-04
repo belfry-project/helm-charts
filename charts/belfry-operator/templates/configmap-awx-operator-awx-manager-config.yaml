@@ -24,5 +24,5 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator
   name: awx-operator-awx-manager-config

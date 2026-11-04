@@ -2,15 +2,18 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: awx-operator
     control-plane: controller-manager
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator
   name: awx-operator-controller-manager-metrics-service
 spec:
   ports:
     - name: https
       port: 8443
       protocol: TCP
-      targetPort: https
+      targetPort: 8443
   selector:
+    app.kubernetes.io/name: awx-operator
     control-plane: controller-manager
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator

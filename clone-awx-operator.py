@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-DEFAULT_AWX_OPERATOR_REPO = "https://github.com/ansible/awx-operator"
+DEFAULT_AWX_OPERATOR_REPO = "https://github.com/belfry-project/belfry-operator"
 
 
 # get the appVersion configured in Chart.yaml

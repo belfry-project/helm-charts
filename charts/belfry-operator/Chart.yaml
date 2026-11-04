@@ -1,0 +1,14 @@
+---
+apiVersion: v2
+description: Helm chart for the Belfry operator, which deploys and manages Belfry on Kubernetes
+name: belfry-operator
+type: application
+home: https://github.com/belfry-project
+sources:
+  - https://github.com/belfry-project/helm-charts
+  - https://github.com/belfry-project/belfry-operator
+# the current version of this helm chart
+version: 0.1.0
+# The version of belfry-operator to install: a release tag, or "main" for
+# unreleased development builds. Charts are only published for release tags.
+appVersion: main

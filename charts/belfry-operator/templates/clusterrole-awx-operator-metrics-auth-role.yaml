@@ -3,8 +3,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    helm.sh/chart: awx-operator
-  name: awx-operator-proxy-role-{{ .Release.Name }}
+    helm.sh/chart: belfry-operator
+  name: awx-operator-metrics-auth-role-{{ .Release.Name }}
 rules:
   - apiGroups:
       - authentication.k8s.io

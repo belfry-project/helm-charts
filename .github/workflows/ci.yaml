@@ -22,7 +22,7 @@ jobs:
       - name: Output Python info
         run: python --version && which python
 
-      - name: Clone ansible/awx-operator
+      - name: Clone belfry-project/belfry-operator
         run: python ./clone-awx-operator.py
 
       - name: Create k8s Kind Cluster
@@ -31,7 +31,7 @@ jobs:
       - name: Build and lint helm chart
         run: |
           IMG=awx-operator-ci make helm-chart
-          helm lint ./charts/awx-operator
+          helm lint ./charts/belfry-operator
 
       - name: Install kubeval
         run: |
@@ -43,12 +43,12 @@ jobs:
 
       - name: Run kubeval
         run: |
-          helm template -n awx awx-operator > tmp/test.yaml
+          helm template -n awx belfry-operator > tmp/test.yaml
           kubeval --strict --force-color --ignore-missing-schemas tmp/test.yaml
         working-directory: ./charts
 
       - name: Install helm chart
         run: |
-          helm install --wait my-awx-operator --namespace awx --create-namespace ./charts/awx-operator
+          helm install --wait my-belfry-operator --namespace awx --create-namespace ./charts/belfry-operator
   nox-sessions:
     uses: ./.github/workflows/reusable-nox.yml
