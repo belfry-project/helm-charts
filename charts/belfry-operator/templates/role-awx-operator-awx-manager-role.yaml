@@ -4,7 +4,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   labels:
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator
   name: awx-operator-awx-manager-role
 rules:
   - apiGroups:
@@ -81,14 +81,27 @@ rules:
       - update
       - watch
   - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
       - batch
     resources:
       - cronjobs
       - jobs
     verbs:
+      - create
+      - delete
       - get
       - list
-      - create
       - patch
       - update
       - watch

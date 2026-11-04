@@ -1,14 +1,14 @@
 {{- if .Values.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   labels:
-    helm.sh/chart: awx-operator
-  name: awx-operator-proxy-rolebinding-{{ .Release.Name }}
+    helm.sh/chart: belfry-operator
+  name: awx-operator-leader-election-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: awx-operator-proxy-role-{{ .Release.Name }}
+  kind: Role
+  name: awx-operator-leader-election-role
 subjects:
   - kind: ServiceAccount
     name: awx-operator-controller-manager

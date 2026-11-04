@@ -18,13 +18,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Skip unreleased operator versions
+        id: version
+        run: |
+          app_version=$(yq '.appVersion' charts/belfry-operator/Chart.yaml)
+          echo "Chart appVersion: ${app_version}"
+          if [ "${app_version}" = "main" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure Git
+        if: steps.version.outputs.publish == 'true'
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       # Chart releaser will internally only run if there is a diff in charts,
       - name: Run chart-releaser
+        if: steps.version.outputs.publish == 'true'
         uses: helm/chart-releaser-action@v1.7.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

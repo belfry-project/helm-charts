@@ -11,11 +11,10 @@ ARCHA := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 ARCHX := $(shell uname -m | sed -e 's/amd64/x86_64/' -e 's/aarch64/arm64/')
 
 # Operator configuration variables
-IMAGE_TAG_BASE ?= quay.io/ansible/awx-operator
-KUBE_RBAC_PROXY_IMAGE ?= quay.io/brancz/kube-rbac-proxy:v0.15.0
+IMAGE_TAG_BASE ?= ghcr.io/belfry-project/belfry-operator
 
 # Helm variables
-CHART_NAME ?= awx-operator
+CHART_NAME ?= belfry-operator
 CHART_OWNER ?= $(GH_REPO_OWNER)
 CHART_REPO ?= awx-operator
 CHART_BRANCH ?= gh-pages
@@ -147,11 +146,6 @@ helm-chart-generate: kustomize helm kubectl-slice yq charts
 			--output-dir=charts/$(CHART_NAME)/raw-files \
 			--sort-by-kind
 
-	@echo "== Patch kube-rbac-proxy image in generated deployment =="
-	for file in charts/$(CHART_NAME)/raw-files/deployment-*-controller-manager.yaml; do\
-		$(YQ) -i '(.spec.template.spec.containers[] | select(.name == "kube-rbac-proxy")).image = "$(KUBE_RBAC_PROXY_IMAGE)"' $${file};\
-	done
-
 	@echo "== Build Templates and CRDS =="
 	# Delete metadata.namespace, release namespace will be automatically inserted by helm
 	for file in charts/$(CHART_NAME)/raw-files/*; do\
@@ -163,12 +157,12 @@ helm-chart-generate: kustomize helm kubectl-slice yq charts
 	done
 
 	# Correct .metadata.name for cluster scoped resources
-	cluster_scoped_files="charts/$(CHART_NAME)/raw-files/clusterrolebinding-awx-operator-proxy-rolebinding.yaml charts/$(CHART_NAME)/raw-files/clusterrole-awx-operator-metrics-reader.yaml charts/$(CHART_NAME)/raw-files/clusterrole-awx-operator-proxy-role.yaml";\
+	cluster_scoped_files="charts/$(CHART_NAME)/raw-files/clusterrolebinding-awx-operator-metrics-auth-rolebinding.yaml charts/$(CHART_NAME)/raw-files/clusterrole-awx-operator-metrics-reader.yaml charts/$(CHART_NAME)/raw-files/clusterrole-awx-operator-metrics-auth-role.yaml";\
 	for file in $${cluster_scoped_files}; do\
 		$(YQ) -i '.metadata.name += "-{{ .Release.Name }}"' $${file};\
 	done
 	# Correct the reference for the clusterrolebinding
-	$(YQ) -i '.roleRef.name += "-{{ .Release.Name }}"' 'charts/$(CHART_NAME)/raw-files/clusterrolebinding-awx-operator-proxy-rolebinding.yaml'
+	$(YQ) -i '.roleRef.name += "-{{ .Release.Name }}"' 'charts/$(CHART_NAME)/raw-files/clusterrolebinding-awx-operator-metrics-auth-rolebinding.yaml'
 
 	# Feed controller deployment file into template to allow for override from values
 	for file in charts/$(CHART_NAME)/raw-files/deployment-*-controller-manager.yaml; do\

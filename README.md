@@ -171,17 +171,8 @@ AWX:
         drop: [ "ALL" ]
 
 operator-controller-containers:
-  # this will get merged into the operator controller deployment spec for
-  # the container named `kube-rbac-proxy` at `spec.template.spec.containers`
-  kube-rbac-proxy:
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 1001
-      seccompProfile:
-        type: RuntimeDefault
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop: [ "ALL" ]
+  # entries are merged into the operator controller deployment spec for
+  # the container with the same name at `spec.template.spec.containers`
   # example: override the environment variables of the main controller container
   # note that since `env` is a list, it will be an override instead of a merge
   # so any env var change requires re-specifying the whole list

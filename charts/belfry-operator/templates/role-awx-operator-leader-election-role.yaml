@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator
   name: awx-operator-leader-election-role
 rules:
   - apiGroups:

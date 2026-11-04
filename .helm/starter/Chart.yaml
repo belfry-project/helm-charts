@@ -1,9 +1,14 @@
 ---
 apiVersion: v2
-description: The community-supported AWX Operator Helm Chart
-name: awx-operator
+description: Helm chart for the Belfry operator, which deploys and manages Belfry on Kubernetes
+name: belfry-operator
 type: application
+home: https://github.com/belfry-project
+sources:
+  - https://github.com/belfry-project/helm-charts
+  - https://github.com/belfry-project/belfry-operator
 # the current version of this helm chart
-version: 3.2.1
-# The version of the awx-operator to install
-appVersion: 2.19.1
+version: 0.1.0
+# The version of belfry-operator to install: a release tag, or "main" for
+# unreleased development builds. Charts are only published for release tags.
+appVersion: main

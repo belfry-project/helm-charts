@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   labels:
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator
   name: awxs.awx.ansible.com
 spec:
   group: awx.ansible.com
@@ -552,6 +552,9 @@ spec:
                 hostname:
                   description: (Deprecated) The hostname of the instance
                   type: string
+                idle_deployment:
+                  description: Scale down deployments to put AWX into an idle state
+                  type: boolean
                 image:
                   description: Registry path to the application container to use
                   type: string
@@ -668,10 +671,10 @@ spec:
                   description: Kind of the deployment type
                   type: string
                 ldap_cacert_secret:
-                  description: Secret where can be found the LDAP trusted Certificate Authority Bundle
+                  description: (Deprecated) Secret where can be found the LDAP trusted Certificate Authority Bundle
                   type: string
                 ldap_password_secret:
-                  description: Secret where can be found the LDAP bind password
+                  description: (Deprecated) Secret where can be found the LDAP bind password
                   type: string
                 loadbalancer_class:
                   default: ""
@@ -736,6 +739,9 @@ spec:
                 metrics_utility_ship_target:
                   description: Metrics-Utility Ship Target
                   type: string
+                nginx_client_max_body_size:
+                  description: Sets the maximum allowed size of the client request body in megabytes (defaults to 5M)
+                  type: integer
                 nginx_listen_queue_size:
                   description: Set the socket listen queue size for nginx (defaults to same as uwsgi)
                   type: integer
@@ -763,6 +769,12 @@ spec:
                   maxLength: 255
                   pattern: ^[a-zA-Z0-9][-a-zA-Z0-9]{0,253}[a-zA-Z0-9]$
                   type: string
+                pg_dump_suffix:
+                  description: Additional parameters for the pg_dump command during a migration
+                  type: string
+                postgres_annotations:
+                  description: Annotations to add to the Postgres deployment.
+                  type: string
                 postgres_configuration_secret:
                   description: Secret where the database configuration can be found
                   type: string
@@ -770,8 +782,24 @@ spec:
                   description: Sets permissions on the /var/lib/pgdata/data for postgres container using an init container (not Openshift)
                   type: boolean
                 postgres_extra_args:
+                  description: (Deprecated, use postgres_extra_settings parameter) Define postgres configuration arguments to use
                   items:
                     type: string
+                  type: array
+                postgres_extra_settings:
+                  description: PostgreSQL configuration settings to be added to postgresql.conf
+                  items:
+                    properties:
+                      setting:
+                        description: PostgreSQL configuration parameter name
+                        type: string
+                      value:
+                        description: PostgreSQL configuration parameter value
+                        type: string
+                    required:
+                      - setting
+                      - value
+                    type: object
                   type: array
                 postgres_extra_volume_mounts:
                   description: Specify volume mounts to be added to Postgres container
@@ -811,7 +839,7 @@ spec:
                       type: object
                   type: object
                 postgres_keep_pvc_after_upgrade:
-                  description: Specify whether or not to keep the old PVC after PostgreSQL upgrades
+                  description: (Deprecated) Specify whether or not to keep the old PVC after PostgreSQL upgrades
                   type: boolean
                 postgres_keepalives:
                   default: true
@@ -906,6 +934,9 @@ spec:
                   enum:
                     - _Yes_
                     - _No_
+                  type: string
+                public_base_url:
+                  description: Public base URL
                   type: string
                 receptor_log_level:
                   description: Set log level of receptor service
@@ -1995,6 +2026,15 @@ spec:
                   description: topology rule(s) for the web pods
                   type: string
               type: object
+              x-kubernetes-validations:
+                - message: Both image and image_version must be set when required
+                  rule: has(self.image) && has(self.image_version) || !has(self.image) && !has(self.image_version)
+                - message: Both redis_image and redis_image_version must be set when required
+                  rule: has(self.redis_image) && has(self.redis_image_version) || !has(self.redis_image) && !has(self.redis_image_version)
+                - message: Both postgres_image and postgres_image_version must be set when required
+                  rule: has(self.postgres_image) && has(self.postgres_image_version) || !has(self.postgres_image) && !has(self.postgres_image_version)
+                - message: Both metrics_utility_image and metrics_utility_image_version must be set when required
+                  rule: has(self.metrics_utility_image) && has(self.metrics_utility_image_version) || !has(self.metrics_utility_image) && !has(self.metrics_utility_image_version)
             status:
               properties:
                 URL:
@@ -2023,6 +2063,7 @@ spec:
                         type: string
                     type: object
                   type: array
+                  x-kubernetes-preserve-unknown-fields: true
                 image:
                   description: URL of the image used for the deployed instance
                   type: string
@@ -2035,6 +2076,9 @@ spec:
                 secretKeySecret:
                   description: Secret key secret name of the deployed instance
                   type: string
+                upgradedFrom:
+                  description: Last gated version
+                  type: string
                 upgradedPostgresVersion:
                   description: Status to indicate that the database has been upgraded to the version in the status
                   type: string
@@ -2042,6 +2086,7 @@ spec:
                   description: Version of the deployed instance
                   type: string
               type: object
+              x-kubernetes-preserve-unknown-fields: true
           type: object
       served: true
       storage: true

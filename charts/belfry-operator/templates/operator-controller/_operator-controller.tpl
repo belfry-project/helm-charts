@@ -8,51 +8,30 @@ kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-    helm.sh/chart: awx-operator
+    helm.sh/chart: belfry-operator
   name: awx-operator-controller-manager
 spec:
   replicas: 1
   selector:
     matchLabels:
       control-plane: controller-manager
-      helm.sh/chart: awx-operator
+      helm.sh/chart: belfry-operator
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: awx-manager
       labels:
         control-plane: controller-manager
-        helm.sh/chart: awx-operator
+        helm.sh/chart: belfry-operator
     spec:
       containers:
         - args:
-            - --secure-listen-address=0.0.0.0:8443
-            - --upstream=http://127.0.0.1:8080/
-            - --logtostderr=true
-            - --v=0
-          image: quay.io/brancz/kube-rbac-proxy:v0.15.0
-          name: kube-rbac-proxy
-          ports:
-            - containerPort: 8443
-              name: https
-              protocol: TCP
-          resources:
-            limits:
-              cpu: 500m
-              memory: 128Mi
-            requests:
-              cpu: 5m
-              memory: 64Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-        - args:
-            - --health-probe-bind-address=:6789
-            - --metrics-bind-address=127.0.0.1:8080
+            - --metrics-require-rbac
+            - --metrics-secure
+            - --metrics-bind-address=:8443
             - --leader-elect
             - --leader-election-id=awx-operator
+            - --health-probe-bind-address=:6789
           env:
             - name: ANSIBLE_GATHERING
               value: explicit
@@ -62,7 +41,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          image: quay.io/ansible/awx-operator:2.19.1
+          image: ghcr.io/belfry-project/belfry-operator:main
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -79,8 +58,8 @@ spec:
             periodSeconds: 10
           resources:
             limits:
-              cpu: 1500m
-              memory: 960Mi
+              cpu: 2000m
+              memory: 4000Mi
             requests:
               cpu: 50m
               memory: 32Mi
