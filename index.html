@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belfry Helm charts</title>
+<style>body{font-family:system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem;line-height:1.5}pre{background:#f4f4f4;padding:1rem;overflow-x:auto}</style>
+</head>
+<body>
+<h1>Belfry Helm charts</h1>
+<p>Helm repository for the <a href="https://github.com/belfry-project/belfry-operator">Belfry operator</a>. The chart version is the Belfry release it installs.</p>
+<pre>helm repo add belfry https://belfry-project.github.io/helm-charts/
+helm repo update
+helm install -n awx --create-namespace belfry-operator belfry/belfry-operator</pre>
+<p>Release candidates are Helm pre-releases: use <code>helm search repo belfry --devel</code> and <code>--version X.Y.Z-rc.N</code>.</p>
+<p>Source: <a href="https://github.com/belfry-project/helm-charts">belfry-project/helm-charts</a>. Index: <a href="index.yaml">index.yaml</a>.</p>
+</body>
+</html>
