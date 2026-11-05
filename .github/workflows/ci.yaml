@@ -50,5 +50,30 @@ jobs:
       - name: Install helm chart
         run: |
           helm install --wait my-belfry-operator --namespace awx --create-namespace ./charts/belfry-operator
+  # Switching an awx-operator-helm release to this chart must work with a
+  # plain helm upgrade (the Deployment selector is immutable).
+  upgrade-from-awx-operator-helm:
+    runs-on: ubuntu-latest
+    name: helm upgrade from awx-operator-helm 2.19.1
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.15.1
+
+      - name: Install awx-operator-helm 2.19.1
+        run: |
+          helm install --wait --timeout 10m awx-operator awx-operator \
+            --repo https://ansible-community.github.io/awx-operator-helm/ --version 2.19.1 \
+            --namespace awx --create-namespace
+          kubectl -n awx get deployments -o wide
+
+      - name: Upgrade the release to this chart
+        run: |
+          kubectl apply --server-side --force-conflicts -f charts/belfry-operator/crds/
+          helm upgrade --wait --timeout 10m awx-operator ./charts/belfry-operator --namespace awx
+          kubectl -n awx get deployments -o wide
+          kubectl -n awx rollout status deployment/awx-operator-controller-manager --timeout=5m
+
   nox-sessions:
     uses: ./.github/workflows/reusable-nox.yml
