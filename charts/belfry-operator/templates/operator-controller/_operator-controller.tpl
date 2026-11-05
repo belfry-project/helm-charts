@@ -8,21 +8,21 @@ kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-    helm.sh/chart: belfry-operator
+    helm.sh/chart: awx-operator
   name: awx-operator-controller-manager
 spec:
   replicas: 1
   selector:
     matchLabels:
       control-plane: controller-manager
-      helm.sh/chart: belfry-operator
+      helm.sh/chart: awx-operator
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: awx-manager
       labels:
         control-plane: controller-manager
-        helm.sh/chart: belfry-operator
+        helm.sh/chart: awx-operator
     spec:
       containers:
         - args:
