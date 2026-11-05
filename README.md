@@ -1,38 +1,39 @@
-# AWX Operator Helm Chart
+# Belfry Operator Helm Chart
 
-This chart installs the AWX Operator resources configured in [this](https://github.com/ansible/awx-operator) repository.
+This chart installs the [Belfry Operator](https://github.com/belfry-project/belfry-operator), which deploys and manages [Belfry](https://github.com/belfry-project/belfry) on Kubernetes, and optionally a Belfry instance.
+
+It is a continuation of the [AWX Operator Helm chart](https://github.com/ansible-community/awx-operator-helm) by the Ansible community. The chart keeps the operator's resources: a Belfry instance is still an `AWX` resource in the `awx.ansible.com` API group, configured under the `AWX` key of the values.
+
+AWX and Ansible are trademarks of Red Hat, Inc. Belfry is not affiliated with or endorsed by Red Hat, Inc.
 
 ## Communication
 
-Refer to the
-[Getting in touch](https://ansible.readthedocs.io/projects/awx-operator-helm/contributing.html#getting-in-touch)
-section of the Contributors guide to find out how to get in touch with us.
-
-You can also find more ways to talk to the community in the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
+Questions, bugs and ideas go to the [issues of this repository](https://github.com/belfry-project/helm-charts/issues), or to [belfry-project/belfry-operator](https://github.com/belfry-project/belfry-operator/issues) for the operator itself.
 
 ## Code of Conduct
 
-Please read and abide by the [Ansible Community Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html).
+Please read and abide by the [Code of Conduct](./CODE-OF-CONDUCT.md).
 
 ## Documentation
 
-- The [Basic usage guide](https://ansible-community.github.io/awx-operator-helm/) provides quickstart information to install the chart.
-- The [AWX operator helm chart docsite](https://ansible.readthedocs.io/projects/awx-operator-helm/) provides complete information about installing, using, contributing, and more.
+- The Belfry documentation is available at <https://belfry-project.github.io/>.
+- The [docs](./docs) directory, based on the [AWX operator helm chart docsite](https://ansible.readthedocs.io/projects/awx-operator-helm/), has more information about installing, using and contributing.
 
 ## Getting Started
 
-To configure your AWX resource using this chart, create your own `yaml` values file. The name is up to personal preference since it will explicitly be passed into the helm chart. Helm will merge whatever values you specify in your file with the default `values.yaml`, overriding any settings you've changed while allowing you to fall back on defaults. Because of this functionality, `values.yaml` should not be edited directly.
+To configure your Belfry instance using this chart, create your own `yaml` values file. The name is up to personal preference since it will explicitly be passed into the helm chart. Helm will merge whatever values you specify in your file with the default `values.yaml`, overriding any settings you've changed while allowing you to fall back on defaults. Because of this functionality, `values.yaml` should not be edited directly.
 
-In your values config, enable `AWX.enabled` and add `AWX.spec` values based on the awx operator's [documentation](https://github.com/ansible/awx-operator/blob/devel/README.md). Consult the docs below for additional functionality.
+In your values config, enable `AWX.enabled` and add `AWX.spec` values based on the operator's [documentation](https://github.com/belfry-project/belfry-operator/blob/main/README.md). Consult the docs below for additional functionality.
 
 ### Installing
 
-To install the `awx-operator` chart, visit the [chart usage guide](https://ansible-community.github.io/awx-operator-helm/).
+Charts are published for operator releases as GitHub releases of this repository, with a Helm repository index at <https://belfry-project.github.io/helm-charts/>.
 
 Example:
 
 ```bash
-helm install my-awx-operator awx-operator/awx-operator -n awx --create-namespace -f myvalues.yaml
+helm repo add belfry https://belfry-project.github.io/helm-charts/
+helm install my-belfry-operator belfry/belfry-operator -n belfry --create-namespace -f myvalues.yaml
 ```
 
 Argument breakdown:
