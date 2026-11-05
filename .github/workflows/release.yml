@@ -1,43 +1,227 @@
-name: Release Chart
+---
+
+name: Release
+
+# Runs when a GitHub release is published (tag X.Y.Z or X.Y.Z-rc.N, no "v"),
+# after belfry-operator was released with the same tag:
+#
+# - sets the chart version and appVersion to the release version (the chart
+#   on main stays at version 0.1.0, appVersion main);
+# - generates the chart from belfry-operator at that tag, with the image
+#   ghcr.io/belfry-project/belfry-operator:<version>;
+# - lints it and installs it into a kind cluster;
+# - attaches the packaged chart belfry-operator-<version>.tgz to the release
+#   and adds it to the Helm repository index with chart-releaser, on the
+#   gh-pages branch served at https://belfry-project.github.io/helm-charts/.
+#
+# Run it manually with dry_run (the default) to do the same with
+# belfry-operator from the operator_ref branch and its :release-test image,
+# keeping the package as a workflow artifact instead of publishing it.
+#
+# The procedure for a whole Belfry release is in RELEASING.md in
+# belfry-project/.github.
 
 on:
+  release:
+    types: [published]
   push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
+    branches: [release-workflow]  # TEMPORARY for testing, remove before merging
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (X.Y.Z or X.Y.Z-rc.N). Without dry run, the release with this tag must exist.'
+        required: true
+        default: '0.0.0-rc.0'
+      dry_run:
+        description: 'Dry run: chart for belfry-operator:release-test, not published'
+        type: boolean
+        default: true
+      operator_ref:
+        description: 'Dry run only: belfry-operator branch to generate the chart from'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: read
+
+concurrency:
+  # One index update at a time
+  group: helm-release
+  cancel-in-progress: false
+
+env:
+  CHART_NAME: belfry-operator
+  REPO_URL: https://belfry-project.github.io/helm-charts/
 
 jobs:
   release:
+    if: github.repository == 'belfry-project/helm-charts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: write
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Determine the version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_OPERATOR_REF: ${{ inputs.operator_ref }}
+        run: |
+          if [ "${EVENT}" = "release" ]; then
+            version="${RELEASE_TAG}"
+            dry_run=false
+            prerelease="${RELEASE_PRERELEASE}"
+          else
+            # Manual run (or a push, while testing a branch): a dry run unless asked otherwise
+            version="${INPUT_VERSION:-0.0.0-rc.0}"
+            dry_run="${INPUT_DRY_RUN:-true}"
+            if [ "${dry_run}" != "true" ]; then
+              prerelease=$(gh release view "${version}" --json isPrerelease --jq .isPrerelease)
+            fi
+          fi
+          if ! [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "::error::Release tags are X.Y.Z or X.Y.Z-rc.N (no v prefix), got: ${version}"
+            exit 1
+          fi
+          if [ "${dry_run}" = "true" ]; then
+            # The chart's appVersion is the operator image tag
+            app_version=release-test
+            operator_ref="${INPUT_OPERATOR_REF:-main}"
+          else
+            app_version="${version}"
+            operator_ref="${version}"
+            if [[ "${version}" == *-rc.* ]] && [ "${prerelease}" != "true" ]; then
+              echo "::error::${version} is a release candidate; mark the GitHub release as a pre-release"
+              exit 1
+            fi
+            if [[ "${version}" != *-rc.* ]] && [ "${prerelease}" = "true" ]; then
+              echo "::error::${version} is a final release; it must not be a pre-release"
+              exit 1
+            fi
+          fi
+          {
+            echo "version=${version}"
+            echo "app_version=${app_version}"
+            echo "operator_ref=${operator_ref}"
+            echo "dry_run=${dry_run}"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
         with:
+          ref: ${{ steps.version.outputs.dry_run == 'true' && github.sha || format('refs/tags/{0}', steps.version.outputs.version) }}
           fetch-depth: 0
 
-      - name: Skip unreleased operator versions
-        id: version
+      - name: Check that the operator image exists
+        env:
+          IMAGE: ghcr.io/belfry-project/belfry-operator:${{ steps.version.outputs.app_version }}
         run: |
-          app_version=$(yq '.appVersion' charts/belfry-operator/Chart.yaml)
-          echo "Chart appVersion: ${app_version}"
-          if [ "${app_version}" = "main" ]; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish=true" >> "$GITHUB_OUTPUT"
+          if ! docker buildx imagetools inspect "${IMAGE}" > /dev/null; then
+            echo "::error::${IMAGE} does not exist; release belfry-operator first"
+            exit 1
+          fi
+          echo "Found ${IMAGE}"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # The chart version is the release version, so `helm install --version
+      # <version>` installs belfry-operator <version>. Helm treats -rc.N
+      # versions as pre-releases: they are only installed with --devel or an
+      # explicit --version.
+      - name: Generate the chart
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          APP_VERSION: ${{ steps.version.outputs.app_version }}
+          OPERATOR_REF: ${{ steps.version.outputs.operator_ref }}
+        run: |
+          yq -i '.version = strenv(VERSION) | .appVersion = strenv(APP_VERSION)' .helm/starter/Chart.yaml
+          make helm-chart-generate OPERATOR_REF="${OPERATOR_REF}"
+          cat "charts/${CHART_NAME}/Chart.yaml"
+          grep -rn "image: ghcr.io/belfry-project/belfry-operator:${APP_VERSION}" "charts/${CHART_NAME}/templates/"
+          helm lint "charts/${CHART_NAME}"
+          mkdir -p .cr-release-packages
+          helm package "charts/${CHART_NAME}" --destination .cr-release-packages
+          ls -l .cr-release-packages
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.15.1
+
+      - name: Install the chart
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          APP_VERSION: ${{ steps.version.outputs.app_version }}
+        run: |
+          helm install --wait --timeout 10m belfry-operator --namespace awx --create-namespace \
+            ".cr-release-packages/${CHART_NAME}-${VERSION}.tgz"
+          kubectl -n awx get deployments -o wide
+          image=$(kubectl -n awx get deployment -l helm.sh/chart="${CHART_NAME}" \
+            -o jsonpath='{.items[0].spec.template.spec.containers[?(@.name=="awx-manager")].image}')
+          echo "Operator image: ${image}"
+          if [ "${image}" != "ghcr.io/belfry-project/belfry-operator:${APP_VERSION}" ]; then
+            echo "::error::The chart deploys ${image}"
+            exit 1
           fi
 
-      - name: Configure Git
-        if: steps.version.outputs.publish == 'true'
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Keep the chart as a workflow artifact (dry run)
+        if: steps.version.outputs.dry_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chart
+          path: .cr-release-packages/*.tgz
 
-      # Chart releaser will internally only run if there is a diff in charts,
-      - name: Run chart-releaser
-        if: steps.version.outputs.publish == 'true'
-        uses: helm/chart-releaser-action@v1.9.0
+      - name: Attach the chart to the GitHub release
+        if: steps.version.outputs.dry_run != 'true'
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release upload "${VERSION}" --clobber ".cr-release-packages/${CHART_NAME}-${VERSION}.tgz"
+
+      # chart-releaser finds the package on the release named after the chart
+      # version (the release tag) and adds its download URL to index.yaml on
+      # gh-pages.
+      - name: Update the Helm repository index
+        if: steps.version.outputs.dry_run != 'true'
+        env:
+          CR_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          make cr
+          mkdir -p .cr-index
+          bin/cr index \
+            --owner "${GITHUB_REPOSITORY_OWNER}" \
+            --git-repo "${GITHUB_REPOSITORY#*/}" \
+            --release-name-template '{{ .Version }}' \
+            --package-path .cr-release-packages \
+            --index-path .cr-index \
+            --pages-branch gh-pages \
+            --push
+
+      - name: Check the published index
+        if: steps.version.outputs.dry_run != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # GitHub Pages takes a minute or two to deploy the new index
+          for _ in $(seq 1 30); do
+            if curl -fsSL "${REPO_URL}index.yaml" \
+              | yq -e ".entries.\"${CHART_NAME}\"[] | select(.version == \"${VERSION}\")" > /dev/null 2>&1; then
+              echo "${CHART_NAME} ${VERSION} is in ${REPO_URL}index.yaml"
+              helm repo add belfry "${REPO_URL}"
+              helm search repo belfry/${CHART_NAME} --versions --devel | head -5
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::${CHART_NAME} ${VERSION} did not appear in ${REPO_URL}index.yaml"
+          exit 1

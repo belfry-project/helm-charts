@@ -27,6 +27,8 @@ CR_VERSION ?= 1.10.1
 
 # Helm variables
 CHART_NAME ?= belfry-operator
+# belfry-operator branch or tag to generate the chart from (default: appVersion)
+OPERATOR_REF ?=
 CHART_OWNER ?= $(GH_REPO_OWNER)
 CHART_REPO ?= awx-operator
 CHART_BRANCH ?= gh-pages
@@ -132,7 +134,7 @@ helm-chart: helm-chart-generate
 helm-chart-generate: kustomize helm kubectl-slice yq charts
 
 	@echo "== Clone the AWX Operator repository =="
-	$(PYTHON) clone-awx-operator.py
+	$(PYTHON) clone-awx-operator.py $(if $(OPERATOR_REF),--branch $(OPERATOR_REF))
 
 	@echo "== KUSTOMIZE: Set image and chart label =="
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMAGE_TAG_BASE):$(shell $(YQ) '.appVersion' .helm/starter/Chart.yaml)
