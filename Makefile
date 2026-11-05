@@ -34,6 +34,11 @@ CHART_REPO ?= awx-operator
 CHART_BRANCH ?= gh-pages
 CHART_DIR ?= gh-pages
 CHART_INDEX ?= index.yaml
+# Value of the helm.sh/chart label, which kustomize also puts into the
+# selectors of the operator Deployment and the metrics Service. Selectors are
+# immutable, so this stays "awx-operator", as in the awx-operator-helm chart:
+# then `helm upgrade` switches an awx-operator-helm release to this chart.
+CHART_LABEL ?= awx-operator
 # use python3 if python isn't in the path
 PYTHON ?= $(shell which python >/dev/null 2>&1 && echo python || echo python3)
 
@@ -138,8 +143,8 @@ helm-chart-generate: kustomize helm kubectl-slice yq charts
 
 	@echo "== KUSTOMIZE: Set image and chart label =="
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMAGE_TAG_BASE):$(shell $(YQ) '.appVersion' .helm/starter/Chart.yaml)
-	cd config/manager && $(KUSTOMIZE) edit set label helm.sh/chart:$(CHART_NAME)
-	cd config/default && $(KUSTOMIZE) edit set label helm.sh/chart:$(CHART_NAME)
+	cd config/manager && $(KUSTOMIZE) edit set label helm.sh/chart:$(CHART_LABEL)
+	cd config/default && $(KUSTOMIZE) edit set label helm.sh/chart:$(CHART_LABEL)
 
 	@echo "== Gather Helm Chart Metadata =="
 	# remove the existing chart if it exists

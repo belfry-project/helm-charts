@@ -4,7 +4,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   labels:
-    helm.sh/chart: belfry-operator
+    helm.sh/chart: awx-operator
   name: awx-operator-awx-manager-role
 rules:
   - apiGroups:
