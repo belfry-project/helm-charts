@@ -38,6 +38,6 @@ jobs:
       # Chart releaser will internally only run if there is a diff in charts,
       - name: Run chart-releaser
         if: steps.version.outputs.publish == 'true'
-        uses: helm/chart-releaser-action@v1.7.0
+        uses: helm/chart-releaser-action@v1.9.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

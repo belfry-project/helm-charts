@@ -13,6 +13,18 @@ ARCHX := $(shell uname -m | sed -e 's/amd64/x86_64/' -e 's/aarch64/arm64/')
 # Operator configuration variables
 IMAGE_TAG_BASE ?= ghcr.io/belfry-project/belfry-operator
 
+# Tool versions, updated by Renovate through the annotations
+# renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>.+)$
+KUSTOMIZE_VERSION ?= v5.8.3
+# renovate: datasource=github-releases depName=patrickdappollonio/kubectl-slice
+KUBECTL_SLICE_VERSION ?= v1.4.2
+# renovate: datasource=github-releases depName=mikefarah/yq
+YQ_VERSION ?= v4.54.1
+# renovate: datasource=github-releases depName=helm/helm
+HELM_VERSION ?= v4.3.1
+# renovate: datasource=github-releases depName=helm/chart-releaser extractVersion=^v(?<version>.+)$
+CR_VERSION ?= 1.10.1
+
 # Helm variables
 CHART_NAME ?= belfry-operator
 CHART_OWNER ?= $(GH_REPO_OWNER)
@@ -31,7 +43,7 @@ ifeq (,$(shell which kustomize 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(KUSTOMIZE)) ;\
-	curl -sSLo - https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v5.0.1/kustomize_v5.0.1_$(OS)_$(ARCHA).tar.gz | \
+	curl -sSLo - https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_$(OS)_$(ARCHA).tar.gz | \
 	tar xzf - -C bin/ ;\
 	}
 else
@@ -47,7 +59,7 @@ ifeq (,$(shell which kubectl-slice 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(KUBECTL_SLICE)) ;\
-	curl -sSLo - https://github.com/patrickdappollonio/kubectl-slice/releases/download/v1.2.6/kubectl-slice_$(OS)_$(ARCHX).tar.gz | \
+	curl -sSLo - https://github.com/patrickdappollonio/kubectl-slice/releases/download/$(KUBECTL_SLICE_VERSION)/kubectl-slice_$(OS)_$(ARCHX).tar.gz | \
 	tar xzf - -C bin/ kubectl-slice ;\
 	}
 else
@@ -63,7 +75,7 @@ ifeq (,$(shell which yq 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(HELM)) ;\
-	curl -sSLo - https://github.com/mikefarah/yq/releases/download/v4.20.2/yq_$(OS)_$(ARCHA).tar.gz | \
+	curl -sSLo - https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(OS)_$(ARCHA).tar.gz | \
 	tar xzf - -C bin/ ;\
 	mv bin/yq_$(OS)_$(ARCHA) bin/yq ;\
 	}
@@ -84,7 +96,7 @@ ifeq (,$(shell which helm 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(HELM)) ;\
-	curl -sSLo - https://get.helm.sh/helm-v3.8.0-$(OS)-$(ARCHA).tar.gz | \
+	curl -sSLo - https://get.helm.sh/helm-$(HELM_VERSION)-$(OS)-$(ARCHA).tar.gz | \
 	tar xzf - -C bin/ $(OS)-$(ARCHA)/helm ;\
 	mv bin/$(OS)-$(ARCHA)/helm bin/helm ;\
 	rmdir bin/$(OS)-$(ARCHA) ;\
@@ -102,7 +114,7 @@ ifeq (,$(shell which cr 2>/dev/null))
 	@{ \
 	set -e ;\
 	mkdir -p $(dir $(CR)) ;\
-	curl -sSLo - https://github.com/helm/chart-releaser/releases/download/v1.3.0/chart-releaser_1.3.0_$(OS)_$(ARCHA).tar.gz | \
+	curl -sSLo - https://github.com/helm/chart-releaser/releases/download/v$(CR_VERSION)/chart-releaser_$(CR_VERSION)_$(OS)_$(ARCHA).tar.gz | \
 	tar xzf - -C bin/ cr ;\
 	}
 else
