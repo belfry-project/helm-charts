@@ -61,9 +61,12 @@ jobs:
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.15.1
 
+      # Without --wait: its kube-rbac-proxy image (gcr.io/kubebuilder) no
+      # longer exists, so the old Deployment never becomes ready. The upgrade
+      # still has to patch that Deployment, which is what this job tests.
       - name: Install awx-operator-helm 2.19.1
         run: |
-          helm install --wait --timeout 10m awx-operator awx-operator \
+          helm install awx-operator awx-operator \
             --repo https://ansible-community.github.io/awx-operator-helm/ --version 2.19.1 \
             --namespace awx --create-namespace
           kubectl -n awx get deployments -o wide
