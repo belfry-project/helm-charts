@@ -2,6 +2,21 @@ apiVersion: v1
 entries:
   belfry-operator:
   - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-11-06T06:22:33.713286496Z"
+    description: Helm chart for the Belfry operator, which deploys and manages Belfry
+      on Kubernetes
+    digest: 5790b7c731e04169994ff1f6530ec93cfcba4f21f1556957016a237bf9af3621
+    home: https://github.com/belfry-project
+    name: belfry-operator
+    sources:
+    - https://github.com/belfry-project/helm-charts
+    - https://github.com/belfry-project/belfry-operator
+    type: application
+    urls:
+    - https://github.com/belfry-project/helm-charts/releases/download/1.0.0/belfry-operator-1.0.0.tgz
+    version: 1.0.0
+  - apiVersion: v2
     appVersion: 1.0.0-rc.2
     created: "2026-11-06T05:08:34.610655985Z"
     description: Helm chart for the Belfry operator, which deploys and manages Belfry
@@ -31,4 +46,4 @@ entries:
     urls:
     - https://github.com/belfry-project/helm-charts/releases/download/1.0.0-rc.1/belfry-operator-1.0.0-rc.1.tgz
     version: 1.0.0-rc.1
-generated: "2026-11-06T05:08:34.610667562Z"
+generated: "2026-11-06T06:22:33.713306433Z"
