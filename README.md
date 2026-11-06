@@ -12,7 +12,9 @@ Questions, bugs and ideas go to the [issues of this repository](https://github.c
 
 ## Code of Conduct
 
-Please read and abide by the [Code of Conduct](./CODE-OF-CONDUCT.md).
+Please read and abide by the [Belfry Code of Conduct](https://github.com/belfry-project/.github/blob/main/CODE_OF_CONDUCT.md).
+
+Report security vulnerabilities privately, as described in the [security policy](https://github.com/belfry-project/.github/blob/main/SECURITY.md), never in a public issue.
 
 ## Documentation
 
