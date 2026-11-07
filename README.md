@@ -83,24 +83,17 @@ kubectl apply --server-side --force-conflicts -k github.com/ansible/awx-operator
 
 ## Releases
 
-Releases occur using the [chart-releaser](https://github.com/helm/chart-releaser-action) action, which creates chart artifacts as GitHub releases and updates a helm index held in the `gh-pages` branch.
+A chart is published for every Belfry release. When a GitHub release `X.Y.Z` (or a pre-release `X.Y.Z-rc.N`) is published in this repository, after belfry-operator was released with the same tag, the [Release workflow](.github/workflows/release.yml):
 
-> The original releases from awx-operator were pre-seeded into the `index.yaml`
+1. sets `version` and `appVersion` in `.helm/starter/Chart.yaml` to the release tag, so chart version `X.Y.Z` installs `ghcr.io/belfry-project/belfry-operator:X.Y.Z`;
+2. generates the chart from belfry-operator at that tag (`make helm-chart-generate`), lints it and installs it into a kind cluster;
+3. attaches `belfry-operator-X.Y.Z.tgz` to the GitHub release and adds it to the Helm repository index on the `gh-pages` branch with [chart-releaser](https://github.com/helm/chart-releaser), served at https://belfry-project.github.io/helm-charts/.
 
-Chart-releaser is designed to use the `charts` directory as the source of truth for the current state of the chart.
-If there are changes to that directory, the action generates a release.
-Unlike many other helm charts, this one is generated on the fly by pulling in the awx-operator source code.
-
-As a result, submitting a pull request that modifies the helm chart generation requires you to run `make helm-chart-generate` and commit the chart changes.
+Running the workflow manually does a dry run: it builds and installs the chart from a belfry-operator branch with its `:release-test` image and keeps the package as a workflow artifact. The steps for a whole Belfry release are in `RELEASING.md` in [belfry-project/.github](https://github.com/belfry-project/.github).
 
 ### Versioning
-The current CI setup does not run chart releases for PRs that do not change the generated chart.
 
-*Any* release that affects helm chart generation *must* increment the `version` field in `.helm/starter/Chart.yaml`, which is our source of truth for versioning in this repo. Follow the [semantic versioning](https://helm.sh/docs/topics/charts/#charts-and-versioning) guidelines outlined by the helm documentation.
-
-The `appVersion` field in `.helm/starter/Chart.yaml` is the source of truth for the version of AWX Operator that is pulled into the chart templates.
-
-> Before version 3.0.0 of this Chart, the `version` field matched the AWX Operator version. The `version` and `appVersion` fields are independent and can be incremented separately to reflect changes to the chart or the underlying app it installs.
+The chart version is the Belfry release version. On `main`, `.helm/starter/Chart.yaml` stays at `version: 0.1.0` and `appVersion: main` (the operator's `main` branch and `:main` image); only the Release workflow sets real versions. Helm treats `-rc.N` versions as pre-releases: install them with `--devel` or an explicit `--version`.
 
 ## Custom Resource Configuration
 
@@ -527,4 +520,17 @@ Where possible, defer to `AWX.spec` configs before applying the abstracted confi
 
 ### Building and Testing
 
-This chart is built using the Makefile in the [awx-operator repo](https://github.com/ansible/awx-operator). Clone the repo and run `make helm-chart-generate`. This will create the awx-operator chart in the `charts/awx-operator` directory. In this process, the contents of the `.helm/starter` directory will be added to the chart.
+The chart in `charts/belfry-operator` is generated, not written by hand, and is committed so that changes to it are visible in reviews. To regenerate it, run:
+
+```bash
+make helm-chart-generate
+```
+
+This clones belfry-operator (the `appVersion` from `.helm/starter/Chart.yaml`, so `main`; another branch or tag with `OPERATOR_REF=<ref>`) with `clone-awx-operator.py`, renders its kustomize manifests with the operator image `ghcr.io/belfry-project/belfry-operator:<appVersion>`, slices them into templates and CRDs, and adds the files from `.helm/starter`. kustomize, helm, yq and kubectl-slice are downloaded into `bin/` if they are not installed.
+
+Change the chart in `.helm/starter` (or the Makefile), regenerate it and commit both. On pull requests, CI checks that the committed chart matches `make helm-chart-generate`, runs `helm lint` and kubeval, installs the chart into a kind cluster, and tests a `helm upgrade` from awx-operator-helm 2.19.1. To try it locally:
+
+```bash
+helm lint charts/belfry-operator
+helm install belfry-operator charts/belfry-operator --namespace awx --create-namespace
+```
