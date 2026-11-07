@@ -1,0 +1,26 @@
+---
+
+name: Upstream check
+
+# Weekly check for upstream commits not merged into main yet. Keeps an issue
+# labelled "upstream-sync" up to date; it never merges anything. See SYNCING.md
+# in belfry-project/.github for the sync procedure.
+
+on:
+  schedule:
+    - cron: '41 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upstream:
+    if: github.repository == 'belfry-project/helm-charts'
+    permissions:
+      contents: read
+      issues: write
+    uses: belfry-project/.github/.github/workflows/upstream-check.yml@main
+    with:
+      upstream_repo: ansible-community/awx-operator-helm
+      upstream_branch: main
