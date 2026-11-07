@@ -62,7 +62,7 @@ spec:
                   type: string
                 force_drop_db:
                   default: false
-                  description: Force drop the database before restoring. USE WITH CAUTION!
+                  description: Drop and recreate an external database before restoring. The operator always does this for the database it manages. USE WITH CAUTION!
                   type: boolean
                 image_pull_policy:
                   default: IfNotPresent
